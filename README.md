@@ -1,4 +1,5 @@
 # udpreplay
+Replay pcap trace over UDP.
 
 ## Usage
   -`dst_ip`: destination IP address
