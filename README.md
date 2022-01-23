@@ -1,11 +1,12 @@
-Usage of udpreplay:
-  -`dst_ip` string
-    	destination IP address
-  -`dst_port` int
-    	destination port
-  -`pcap_file` string
-    	path to pcap file
-  -`src_ip` string
-    	source IP address
-  -`src_port` int
-    	source port
+# udpreplay
+
+## Usage
+  -`dst_ip`: destination IP address
+  
+  -`dst_port`: destination port
+  
+  -`pcap_file`: path to pcap file
+  
+  -`src_ip`: source IP address
+  
+  -`src_port`: source port
