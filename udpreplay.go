@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"flag"
+	"fmt"
 	"net"
 	"os/exec"
 	"strconv"
@@ -15,11 +16,13 @@ import (
 
 // Config parameters
 type Config struct {
-	PcapFile string
-	SrcIp    string
-	SrcPort  int
-	DstIp    string
-	DstPort  int
+	PcapFile    string
+	SrcIp       string
+	SrcPort     int
+	DstIp       string
+	DstPort     int
+	SrcIpFilter string
+	Verbose     bool
 }
 
 // Datagram struct (each UDP packet)
@@ -66,6 +69,20 @@ func parse_config(cfg *Config) {
 		"destination port",
 	)
 
+	flag.StringVar(
+		&cfg.SrcIpFilter,
+		"src_ip_filter",
+		"",
+		"ip.src filter",
+	)
+
+	flag.BoolVar(
+		&cfg.Verbose,
+		"verbose",
+		false,
+		"print summary",
+	)
+
 	// Parse flags
 	flag.Parse()
 }
@@ -88,6 +105,7 @@ func main() {
 		"udp.length",
 		"-E",
 		"separator=,",
+		fmt.Sprintf("ip.src == %s", cfg.SrcIpFilter),
 	}
 	cmd := exec.Command("/usr/bin/tshark", x...)
 	var outb, errb bytes.Buffer
@@ -125,7 +143,9 @@ func main() {
 		prev_timestamp = timestamp
 	}
 
-	log.Printf("Parsed %v packets", len(datagrams))
+	if cfg.Verbose {
+		log.Printf("Parsed %v packets", len(datagrams))
+	}
 
 	// Start UDP server
 	src := &net.UDPAddr{Port: cfg.SrcPort, IP: net.ParseIP(cfg.SrcIp)}
@@ -136,12 +156,27 @@ func main() {
 	}
 
 	// Push bytes
+	var num_slow_packets int
+	var sleep_time time.Duration
+	var slow_time time.Duration
+	send_start := time.Now()
 	for _, dg := range datagrams {
 		start := time.Now()
 		conn.Write(dg.buf)
-		sleep_time := dg.next_interval - time.Since(start)
-		log.Printf("Sleeping %v --> %v", dg.next_interval, sleep_time)
+		if sleep_time < 0 {
+			sleep_time = dg.next_interval - time.Since(start) + sleep_time
+		} else {
+			sleep_time = dg.next_interval - time.Since(start)
+		}
+		if sleep_time < 0 {
+			num_slow_packets++
+			slow_time += -sleep_time
+		}
 		time.Sleep(sleep_time)
 	}
 
+	if cfg.Verbose {
+		log.Printf("Sent %d packets in %v", len(datagrams), time.Since(send_start))
+		log.Printf("%d/%d slow packets; %v delay", num_slow_packets, len(datagrams), slow_time)
+	}
 }
