@@ -22,6 +22,7 @@ type Config struct {
 	DstIp       string
 	DstPort     int
 	SrcIpFilter string
+	DurationSec int
 	Verbose     bool
 }
 
@@ -74,6 +75,13 @@ func parse_config(cfg *Config) {
 		"src_ip_filter",
 		"",
 		"ip.src filter",
+	)
+
+	flag.IntVar(
+		&cfg.DurationSec,
+		"duration_sec",
+		0,
+		"duration to run app",
 	)
 
 	flag.BoolVar(
@@ -156,13 +164,18 @@ func main() {
 	}
 
 	// Push bytes
+	var packets_sent int
 	var num_slow_packets int
 	var sleep_time time.Duration
 	var slow_time time.Duration
 	send_start := time.Now()
 	for _, dg := range datagrams {
+		if time.Since(send_start) >= time.Duration(cfg.DurationSec)*time.Second {
+			break
+		}
 		start := time.Now()
 		conn.Write(dg.buf)
+		packets_sent++
 		if sleep_time < 0 {
 			sleep_time = dg.next_interval - time.Since(start) + sleep_time
 		} else {
@@ -176,7 +189,7 @@ func main() {
 	}
 
 	if cfg.Verbose {
-		log.Printf("Sent %d packets in %v", len(datagrams), time.Since(send_start))
-		log.Printf("%d/%d slow packets; %v delay", num_slow_packets, len(datagrams), slow_time)
+		log.Printf("Sent %d/%d packets in %v", packets_sent, len(datagrams), time.Since(send_start))
+		log.Printf("%d/%d slow packets; %v delay", num_slow_packets, packets_sent, slow_time)
 	}
 }
