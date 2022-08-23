@@ -11,3 +11,7 @@ Replay pcap trace over UDP.
   -`src_ip`: source IP address
   
   -`src_port`: source port
+
+  ## Song's modification
+  - Add a sequence number to the head of payload.
+  - Limiting the maximum datagram size to 1400 bytes.

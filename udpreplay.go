@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"flag"
-	"fmt"
 	"net"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+	"encoding/binary"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -113,7 +113,7 @@ func main() {
 		"udp.length",
 		"-E",
 		"separator=,",
-		fmt.Sprintf("ip.src == %s", cfg.SrcIpFilter),
+		// fmt.Sprintf("ip.src == %s", cfg.SrcIpFilter),
 	}
 	cmd := exec.Command("/usr/bin/tshark", x...)
 	var outb, errb bytes.Buffer
@@ -141,6 +141,9 @@ func main() {
 		// Add data
 		var dg datagram
 		dg.len_bytes = int(len_bytes)
+		if dg.len_bytes>1400 {
+			dg.len_bytes=1400
+		}
 		dg.buf = make([]byte, dg.len_bytes)
 		if !prev_timestamp.IsZero() {
 			dg.next_interval = timestamp.Sub(prev_timestamp)
@@ -170,10 +173,11 @@ func main() {
 	var slow_time time.Duration
 	send_start := time.Now()
 	for _, dg := range datagrams {
-		if time.Since(send_start) >= time.Duration(cfg.DurationSec)*time.Second {
-			break
-		}
+		// if time.Since(send_start) >= time.Duration(cfg.DurationSec)*time.Second {
+		// 	break
+		// }
 		start := time.Now()
+		binary.LittleEndian.PutUint32(dg.buf, uint32(packets_sent))
 		conn.Write(dg.buf)
 		packets_sent++
 		if sleep_time < 0 {
