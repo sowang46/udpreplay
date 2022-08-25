@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"encoding/binary"
+	"net/http/pprof"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -96,6 +97,10 @@ func parse_config(cfg *Config) {
 }
 
 func main() {
+	go func() {
+        log.Println(http.ListenAndServe("localhost:6060", nil))
+    }()
+
 	// Parse config
 	var cfg Config
 	parse_config(&cfg)

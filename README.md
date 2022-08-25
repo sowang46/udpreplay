@@ -15,4 +15,5 @@ Replay pcap trace over UDP.
   ## Song's modification
   - Add a sequence number to the head of payload.
   - Limit the maximum datagram size to 1400 bytes.
-  - Add a script `ParsePCAP.py` that parse Tx/Rx pcap files and calculate per packet latency
+  - Add a script `ParsePCAP.py` which parses Tx/Rx pcap files and calculate per packet latency.
+  - Add a profiler to main() for debugging.
